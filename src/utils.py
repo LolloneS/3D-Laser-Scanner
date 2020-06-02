@@ -7,9 +7,9 @@ import numpy as np
 
 @dataclass(frozen=True)
 class Plane:
-    origin: np.array
-    normal: np.array
-    R: Optional[np.array] = None
+    origin: np.ndarray
+    normal: np.ndarray
+    R: Optional[np.ndarray] = None
 
 
 @dataclass(frozen=True)

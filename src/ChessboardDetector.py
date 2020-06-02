@@ -11,7 +11,7 @@ from utils import draw_circles, show_image, threshold_image
 class ChessboardDetector:
     base_folder: str = "calibration/images/"
     n_images: int = 50
-    destination: np.array = np.array([[[0, 900]], [[0, 0]], [[700, 0]], [[700, 900]]])
+    destination: np.ndarray = np.array([[[0, 900]], [[0, 0]], [[700, 0]], [[700, 900]]])
     debug: bool = False
     width: int = 700
     height: int = 900
@@ -27,7 +27,7 @@ class ChessboardDetector:
             + [[15, j, 0] for j in range(1, 12, 2)]
             + [[17, j, 0] for j in range(3, 10, 2)]
         )
-        return np.expand_dims(np.array(corners), axis=1).astype("float32")
+        return np.expand_dims(np.array(corners), axis=1).astype(np.float32)
 
     def get_chessboard_mask(self, thresh):
         """
@@ -51,7 +51,7 @@ class ChessboardDetector:
                 5 < cv.contourArea(cnt) < 1000
                 and cv.pointPolygonTest(chessboard, tuple(cnt[0][0]), True) > 1
             ):
-                location_xy = cnt[0].astype("float32")
+                location_xy = cnt[0].astype(np.float32)
                 return mask, chessboard, location_xy
 
     def find_closest_point(self, points, target):
@@ -199,7 +199,7 @@ class ChessboardDetector:
             show_image(opening_copy)
 
         sorted_corners = self.sort_inner_corners(inner_corners)
-        return np.expand_dims(sorted_corners, axis=1).astype("float32")
+        return np.expand_dims(sorted_corners, axis=1).astype(np.float32)
 
     def run(self):
         result = []
@@ -223,7 +223,7 @@ class ChessboardDetector:
 
             H = cv.findHomography(np.array(sorted_corners), self.destination)[0]
             H_inv = np.linalg.inv(H)
-            warped = cv.warpPerspective(img, H, (700, 900))
+            warped = cv.warpPerspective(img, H, (self.width, self.height))
             warped_thresh = threshold_image(warped)
             inner_corners = self.find_inner_corners_warped(warped_thresh)
             inner_corners_in_original_image = []
@@ -236,4 +236,4 @@ class ChessboardDetector:
                 draw_circles(img_copy, inner_corners_in_original_image, text=True)
                 show_image(img_copy)
             result = result + [inner_corners_in_original_image]
-        return np.array(result).astype("float32")
+        return np.array(result).astype(np.float32)

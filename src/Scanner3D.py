@@ -27,10 +27,10 @@ class Scanner3D:
     K_inv: np.ndarray
     dist: np.ndarray
     filename: str = "cup1.mp4"
-    inner_rectangle: np.array = np.array([[[0, 0]], [[23, 0]], [[23, 13]], [[0, 13]]])
-    lower_red_obj: np.array = np.array([35, 25, 40])
-    lower_red_planes: np.array = np.array([45, 30, 45])
-    upper_red: np.array = np.array([100, 255, 255])
+    inner_rectangle: np.ndarray = np.array([[[0, 0]], [[23, 0]], [[23, 13]], [[0, 13]]])
+    lower_red_obj: np.ndarray = np.array([35, 25, 40])
+    lower_red_planes: np.ndarray = np.array([45, 30, 45])
+    upper_red: np.ndarray = np.array([100, 255, 255])
     dbscan: DBSCAN = DBSCAN(eps=7, min_samples=20)
 
     def get_rectangles_mask(self, thresh: np.ndarray) -> np.ndarray:
@@ -180,7 +180,7 @@ class Scanner3D:
         """
         return np.hstack((points[:, 0], np.ones(points.shape[0]).reshape(-1, 1),))
 
-    def remove_obj_outliers(self, points: np.ndarray):
+    def remove_obj_outliers(self, points: np.ndarray) -> Optional[np.ndarray]:
         """
         Use the DBSCAN clustering algorithm in order to remove possible outliers from
         the points detected as laser in the object. We are basically enforcing
@@ -192,7 +192,7 @@ class Scanner3D:
         mask = dbscan_result.labels_ != -1
         return np.expand_dims(points[:, 0][mask], axis=1)
 
-    def get_colors(self, image: np.ndarray, coordinates: np.ndarray):
+    def get_colors(self, image: np.ndarray, coordinates: np.ndarray) -> np.ndarray:
         """
         Given an image and a list of coordinates of shape (n_points, 1, 2),
         return the RGB colors of those coordinates in the (0...1) range.
@@ -200,14 +200,14 @@ class Scanner3D:
         flip the columns.
         """
         x = coordinates.squeeze(1)
-        return np.flip(image[x[:, 1], x[:, 0]].astype("float64") / 255.0, axis=1)
+        return np.flip(image[x[:, 1], x[:, 0]].astype(np.float64) / 255.0, axis=1)
 
     def get_laser_points(
         self,
         original_image: np.ndarray,
         image: np.ndarray,
         extreme_points: ExtremePoints,
-    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]:
+    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]:
         """
         Given the interesting region of an image, containing the wall and desk planes
         and the object, return the laser points in the three separate regions:
@@ -250,11 +250,12 @@ class Scanner3D:
                         points=laser_wall, offset=Point(xmin, ymin_wall)
                     )
                     laser_obj = self.remove_obj_outliers(laser_obj)
-                    laser_obj = self.offset_points(
-                        points=laser_obj, offset=Point(xmin, ymax_wall)
-                    )
-                    obj_colors = self.get_colors(original_image, laser_obj)
-                    return laser_wall, laser_desk, laser_obj, obj_colors
+                    if laser_obj is not None:
+                        laser_obj = self.offset_points(
+                            points=laser_obj, offset=Point(xmin, ymax_wall)
+                        )
+                        obj_colors = self.get_colors(original_image, laser_obj)
+                        return laser_wall, laser_desk, laser_obj, obj_colors
         return None, None, None, None
 
     def save_3d_render(
@@ -266,7 +267,7 @@ class Scanner3D:
         a version to which an outlier removal process has been applied.
         """
         pcd = o3d.geometry.PointCloud()
-        pcd.points = o3d.utility.Vector3dVector(np.vstack(points).astype("float64"))
+        pcd.points = o3d.utility.Vector3dVector(np.vstack(points).astype(np.float64))
         pcd.colors = o3d.utility.Vector3dVector(np.vstack(colors))
         if self.debug:
             o3d.visualization.draw_geometries([pcd])
@@ -285,7 +286,7 @@ class Scanner3D:
 
     def create_exiting_rays(
         self, points: np.ndarray, is_obj: bool = False
-    ) -> List[np.array]:
+    ) -> List[np.ndarray]:
         """
         Given a set of 2D points, get their real world 3D coordinates (direction).
         In general, mapping points from the real world [x, y, z, 1]
@@ -306,8 +307,8 @@ class Scanner3D:
         return [self.K_inv @ point for point in points]
 
     def compute_intersections(
-        self, plane: Plane, directions: List[np.array]
-    ) -> List[np.array]:
+        self, plane: Plane, directions: List[np.ndarray]
+    ) -> List[np.ndarray]:
         """
         Given a plane represented by its origin and a normal
         and a list of rays, compute the intersections between
