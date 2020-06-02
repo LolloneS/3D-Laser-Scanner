@@ -207,7 +207,12 @@ class Scanner3D:
         original_image: np.ndarray,
         image: np.ndarray,
         extreme_points: ExtremePoints,
-    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]:
+    ) -> Tuple[
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+    ]:
         """
         Given the interesting region of an image, containing the wall and desk planes
         and the object, return the laser points in the three separate regions:
